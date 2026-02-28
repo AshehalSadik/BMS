@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login — Business Management System</title>
+  <!-- Static resources in Spring Boot are served from /static. This points to src/main/resources/static/css/style.css -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="page">
+  <main class="login-container" role="main" aria-labelledby="login-title">
+    <div class="login-card" role="form" aria-describedby="login-desc">
+      <header class="brand">
+        <h1 id="login-title" class="brand-title">BMS</h1>
+        <p id="login-desc" class="brand-sub">Business Management System</p>
+      </header>
+
+      <form class="login-form" action="/login" method="post" novalidate>
+        <div class="form-field">
+          <label for="username" class="label">Username</label>
+          <input id="username" name="username" type="text" class="input" autocomplete="username" required />
+        </div>
+
+        <div class="form-field">
+          <label for="password" class="label">Password</label>
+          <input id="password" name="password" type="password" class="input" autocomplete="current-password" required />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Sign in</button>
+          <a href="/signup" class="btn btn-secondary">Create account</a>
+        </div>
+
+        <p class="help-text">Don't have an account? Create one or contact your administrator.</p>
+      </form>
+
+      <footer class="login-footer">© <span id="year"></span> Your Company</footer>
+    </div>
+  </main>
+
+  <script>
+    // small script to set current year; unobtrusive and easy to remove
+    (function(){
+      var el = document.getElementById('year');
+      if(el) el.textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
