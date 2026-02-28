@@ -3,47 +3,51 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login — Business Management System</title>
-  <!-- Static resources in Spring Boot are served from /static. This points to src/main/resources/static/css/style.css -->
+  <title>Login — Faculty Review System</title>
+  <!-- Ionicons for input icons -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="page">
-  <main class="login-container" role="main" aria-labelledby="login-title">
-    <div class="login-card" role="form" aria-describedby="login-desc">
-      <header class="brand">
-        <h1 id="login-title" class="brand-title">BMS</h1>
-        <p id="login-desc" class="brand-sub">Business Management System</p>
-      </header>
+  <main class="login-section" role="main" aria-labelledby="login-title">
+    <section class="panel" aria-describedby="login-desc">
+      <h1 id="login-title" class="panel-title">Login</h1>
+      <p id="login-desc" class="panel-sub">Faculty Review System</p>
 
       <form class="login-form" action="/login" method="post" novalidate>
-        <div class="form-field">
-          <label for="username" class="label">Username</label>
-          <input id="username" name="username" type="text" class="input" autocomplete="username" required />
+        <!-- server-side error placeholder (template engines can populate this) -->
+        <div class="dialog-row">
+          <span class="error-text" aria-live="polite"></span>
         </div>
 
-        <div class="form-field">
-          <label for="password" class="label">Password</label>
-          <input id="password" name="password" type="password" class="input" autocomplete="current-password" required />
+        <div class="inputbox">
+          <input id="username" name="username" type="text" required autocomplete="username" placeholder=" " />
+          <label for="username">Username</label>
+          <ion-icon name="person-outline" class="input-icon"></ion-icon>
         </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Sign in</button>
-          <a href="/signup" class="btn btn-secondary">Create account</a>
+        <div class="inputbox">
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder=" " />
+          <label for="password">Password</label>
+          <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
         </div>
 
-        <p class="help-text">Don't have an account? Create one or contact your administrator.</p>
+        <div class="helpers">
+          <a href="#" class="link-muted">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Log in</button>
+
+        <div class="register">
+          <p>Don't have an account? <a href="/signup" class="link-accent">Register</a></p>
+        </div>
       </form>
-
-      <footer class="login-footer">© <span id="year"></span> Your Company</footer>
-    </div>
+    </section>
   </main>
 
   <script>
-    // small script to set current year; unobtrusive and easy to remove
-    (function(){
-      var el = document.getElementById('year');
-      if(el) el.textContent = new Date().getFullYear();
-    })();
+    // placeholder script block (no-op)
   </script>
 </body>
 </html>
