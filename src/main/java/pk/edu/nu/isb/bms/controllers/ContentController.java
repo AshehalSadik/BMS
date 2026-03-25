@@ -8,10 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import pk.edu.nu.isb.bms.models.DuplicateUserFieldException;
 import pk.edu.nu.isb.bms.models.MyUserService;
 import pk.edu.nu.isb.bms.models.RegistrationRequest;
-import pk.edu.nu.isb.bms.models.WeakPasswordException;
 
 @Controller
 public class ContentController {
@@ -63,14 +61,9 @@ public class ContentController {
             return "signup";
         }
 
-        try {
-            userService.registerUser(request);
-            model.addAttribute("signupSuccess", "Account created successfully. You can now sign in.");
-            model.addAttribute("registrationRequest", new RegistrationRequest());
-            return "signup";
-        } catch (DuplicateUserFieldException | WeakPasswordException ex) {
-            model.addAttribute("signupError", ex.getMessage());
-            return "signup";
-        }
+        userService.registerUser(request);
+        model.addAttribute("signupSuccess", "Account created successfully. You can now sign in.");
+        model.addAttribute("registrationRequest", new RegistrationRequest());
+        return "signup";
     }
 }

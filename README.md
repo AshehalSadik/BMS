@@ -17,3 +17,7 @@ The login page template is at `src/main/resources/templates/login.html` and stat
 - User records live in `app_users`.
 - Username and email are unique.
 - Account flags: `enabled`, `account_locked`.
+
+## Error handling
+- UI-facing signup errors are centrally handled in `GlobalExceptionHandler`.
+- Duplicate username/email and password policy errors are mapped to user-friendly messages for Thymeleaf templates.
