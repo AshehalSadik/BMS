@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import pk.edu.nu.isb.bms.models.DuplicateUserFieldException;
 import pk.edu.nu.isb.bms.models.MyUserService;
 import pk.edu.nu.isb.bms.models.RegistrationRequest;
@@ -22,7 +23,26 @@ public class ContentController {
     }
 
     @GetMapping("/login")
-    public String login() {
+    public String login(@RequestParam(value = "invalid", required = false) String invalid,
+                        @RequestParam(value = "locked", required = false) String locked,
+                        @RequestParam(value = "disabled", required = false) String disabled,
+                        @RequestParam(value = "error", required = false) String error,
+                        @RequestParam(value = "logout", required = false) String logout,
+                        Model model) {
+        if (invalid != null) {
+            model.addAttribute("loginError", "Invalid credentials. Please check your username and password.");
+        } else if (locked != null) {
+            model.addAttribute("loginError", "Your account is locked. Please contact support.");
+        } else if (disabled != null) {
+            model.addAttribute("loginError", "Your account is disabled. Please contact support.");
+        } else if (error != null) {
+            model.addAttribute("loginError", "Login failed. Please try again.");
+        }
+
+        if (logout != null) {
+            model.addAttribute("loginSuccess", "You have been logged out successfully.");
+        }
+
         return "login";
     }
 

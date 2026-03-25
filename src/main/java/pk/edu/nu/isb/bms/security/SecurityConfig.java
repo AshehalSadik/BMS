@@ -22,6 +22,7 @@ public class SecurityConfig {
 
     @Autowired
     private final MyUserService userService;
+    private final CustomAuthenticationFailureHandler authenticationFailureHandler;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -50,7 +51,7 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/", true)
-                        .failureUrl("/login?error=true")
+                        .failureHandler(authenticationFailureHandler)
                         .permitAll())
                 .logout(logout -> logout
                         .logoutUrl("/logout")

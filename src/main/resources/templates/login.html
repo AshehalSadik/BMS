@@ -18,7 +18,8 @@
       <form class="login-form" action="/login" method="post" novalidate>
         <!-- server-side error placeholder (template engines can populate this) -->
         <div class="dialog-row">
-          <span class="error-text" aria-live="polite"></span>
+          <span class="error-text" aria-live="polite" th:text="${loginError}"></span>
+          <span class="success-text" aria-live="polite" th:text="${loginSuccess}"></span>
         </div>
 
         <div class="inputbox">
