@@ -16,25 +16,32 @@
       <h1 id="signup-title" class="panel-title">Create account</h1>
       <p id="signup-desc" class="panel-sub">Faculty Review System — Sign up</p>
 
-      <form id="signup-form" class="login-form" action="/req/signup" method="post" novalidate>
+      <form id="signup-form" class="login-form" action="/signup" method="post" th:object="${registrationRequest}" novalidate>
         <div class="dialog-row">
-          <span id="signup-error" class="error-text" aria-live="polite"></span>
+          <span id="signup-error" class="error-text" aria-live="polite" th:text="${signupError}"></span>
+          <span class="success-text" aria-live="polite" th:text="${signupSuccess}"></span>
         </div>
 
         <div class="inputbox">
-          <input id="email" name="email" type="email" required autocomplete="email" placeholder=" " />
+          <input id="username" name="username" type="text" required autocomplete="username" placeholder=" " th:field="*{username}" />
+          <label for="username">Username</label>
+          <ion-icon name="person-outline" class="input-icon"></ion-icon>
+        </div>
+
+        <div class="inputbox">
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder=" " th:field="*{email}" />
           <label for="email">Email</label>
           <ion-icon name="mail-outline" class="input-icon"></ion-icon>
         </div>
 
         <div class="inputbox">
-          <input id="password" name="password" type="password" required autocomplete="new-password" placeholder=" " />
+          <input id="password" name="password" type="password" required autocomplete="new-password" placeholder=" " th:field="*{password}" />
           <label for="password">Password</label>
           <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
         </div>
 
         <div class="inputbox">
-          <input id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password" placeholder=" " />
+          <input id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password" placeholder=" " th:field="*{confirmPassword}" />
           <label for="confirmPassword">Confirm password</label>
           <ion-icon name="repeat-outline" class="input-icon"></ion-icon>
         </div>

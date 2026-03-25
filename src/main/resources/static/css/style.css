@@ -59,6 +59,12 @@ body.page{
 .login-form{width:100%;display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .dialog-row{min-height:20px}
 .error-text{display:block;color:var(--fast-4);font-weight:600;text-align:center}
+.success-text {
+  display: block;
+  margin-top: 6px;
+  color: #048C34;
+  text-align: center;
+}
 
 .inputbox{position:relative;margin:12px 0;border-bottom:2px solid rgba(0,0,0,0.06);padding-right:34px}
 .inputbox input{width:100%;height:44px;background:transparent;border:0;outline:0;padding:0 10px;font-size:1rem;color:var(--muted)}
