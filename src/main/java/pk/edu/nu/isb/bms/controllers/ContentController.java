@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import pk.edu.nu.isb.bms.models.FacultyService;
 import pk.edu.nu.isb.bms.models.MyUserService;
 import pk.edu.nu.isb.bms.models.RegistrationRequest;
 
@@ -15,9 +16,21 @@ import pk.edu.nu.isb.bms.models.RegistrationRequest;
 public class ContentController {
 
     private final MyUserService userService;
+    private final FacultyService facultyService;
 
-    public ContentController(MyUserService userService) {
+    public ContentController(MyUserService userService, FacultyService facultyService) {
         this.userService = userService;
+        this.facultyService = facultyService;
+    }
+
+    @GetMapping("/")
+    public String home(@RequestParam(value = "q", required = false) String q,
+                       @RequestParam(value = "dept", required = false, defaultValue = "All") String dept,
+                       Model model) {
+        model.addAttribute("q", q == null ? "" : q);
+        model.addAttribute("dept", dept == null ? "All" : dept);
+        model.addAttribute("faculty", facultyService.search(q, dept));
+        return "home";
     }
 
     @GetMapping("/login")
