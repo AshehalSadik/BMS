@@ -10,9 +10,6 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "reviewer_user_id", nullable = false)
-    private Long reviewerUserId;
-
     @ManyToOne
     @JoinColumn(name = "faculty_id", nullable = false)
     private FacultyEntity faculty;
@@ -21,6 +18,11 @@ public class Review {
 
     @Column(columnDefinition = "text")
     private String comment;
+
+    private boolean reported;
+
+    @Column(name = "student_name")
+    private String studentName;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
@@ -32,15 +34,16 @@ public class Review {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public Long getReviewerUserId() { return reviewerUserId; }
-    public void setReviewerUserId(Long reviewerUserId) { this.reviewerUserId = reviewerUserId; }
     public FacultyEntity getFaculty() { return faculty; }
     public void setFaculty(FacultyEntity faculty) { this.faculty = faculty; }
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+    public boolean isReported() { return reported; }
+    public void setReported(boolean reported) { this.reported = reported; }
+    public String getStudentName() { return studentName; }
+    public void setStudentName(String studentName) { this.studentName = studentName; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }
-

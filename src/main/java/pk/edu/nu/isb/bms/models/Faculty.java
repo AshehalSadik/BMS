@@ -5,14 +5,21 @@ public class Faculty {
     private String name;
     private String department;
     private String imageUrl;
+    private String bio;
 
     public Faculty() {}
 
+    // Backward compatible constructor (no bio)
     public Faculty(Long id, String name, String department, String imageUrl) {
+        this(id, name, department, imageUrl, null);
+    }
+
+    public Faculty(Long id, String name, String department, String imageUrl, String bio) {
         this.id = id;
         this.name = name;
         this.department = department;
         this.imageUrl = imageUrl;
+        this.bio = bio;
     }
 
     public Long getId() { return id; }
@@ -26,5 +33,7 @@ public class Faculty {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-}
 
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+}

@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ public class FacultyService {
         if (!entities.isEmpty()) {
             for (FacultyEntity e : entities) {
                 List<Review> reviews = reviewRepository.findByFaculty_Id(e.getId());
-                Faculty dto = new Faculty(e.getId(), e.getName(), e.getDepartment() == null ? "Unknown" : e.getDepartment().getName(), e.getImagePath());
+                Faculty dto = new Faculty(e.getId(), e.getName(), e.getDepartment() == null ? "Unknown" : e.getDepartment().getName(), e.getImagePath(), e.getBio());
                 faculty.add(dto);
             }
             System.out.println("Faculty loaded from DB: " + faculty.size());
@@ -163,5 +164,21 @@ public class FacultyService {
                 .filter(f -> (q.isEmpty() || (f.getName() != null && f.getName().toLowerCase(Locale.ROOT).contains(q))))
                 .filter(f -> (dept == null || dept.equals("All") || (f.getDepartment() != null && f.getDepartment().equalsIgnoreCase(dept))))
                 .collect(Collectors.toList());
+    }
+
+    public Optional<Faculty> findById(Long id) {
+        // First try DB
+        try {
+            Optional<FacultyEntity> maybe = facultyRepository.findById(id);
+            if (maybe.isPresent()) {
+                FacultyEntity e = maybe.get();
+                Faculty dto = new Faculty(e.getId(), e.getName(), e.getDepartment() == null ? "Unknown" : e.getDepartment().getName(), e.getImagePath(), e.getBio());
+                return Optional.of(dto);
+            }
+        } catch (Exception ignored) {
+            // repository may not exist in some contexts; fall back to in-memory
+        }
+
+        return faculty.stream().filter(f -> f.getId() != null && f.getId().equals(id)).findFirst();
     }
 }

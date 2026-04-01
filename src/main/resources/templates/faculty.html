@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${faculty.name} + ' - Profile'"></title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+        body { font-family: Inter, system-ui, -apple-system, Roboto, Arial; background:#f8fafc; color:#0f172a; }
+        .container{max-width:900px;margin:24px auto;padding:0 16px}
+        .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);border:1px solid #eef2ff}
+        .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+        .btn-primary{background:#1d4ed8;color:white}
+    </style>
+</head>
+<body>
+<div class="container">
+    <a th:href="@{/}" style="color:#2563eb;display:inline-block;margin-bottom:12px">← Back to Faculty List</a>
+
+    <div class="card" style="display:flex;gap:20px;align-items:center;margin-bottom:20px">
+        <div style="width:96px;height:96px;border-radius:999px;overflow:hidden;border:4px solid #e6f0ff;flex-shrink:0">
+            <img th:if="${faculty.imageUrl != null}" th:src="${faculty.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover" />
+            <div th:if="${faculty.imageUrl == null}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;color:#cbd5e1">👤</div>
+        </div>
+        <div>
+            <h1 th:text="${faculty.name}" style="font-size:26px;margin:0"></h1>
+            <div th:if="${faculty.department != null}" th:text="${faculty.department}" style="color:#2563eb;font-weight:600;margin-top:6px"></div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:24px">
+        <div>
+            <h3 style="margin-bottom:12px">Student Reviews</h3>
+            <div th:if="${#lists.isEmpty(reviews)}" class="card">No reviews yet.</div>
+            <div th:each="r: ${reviews}" class="card" style="margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:start">
+                    <div>
+                        <strong th:text="${r.studentName}"></strong>
+                        <div style="color:#64748b;font-size:13px;margin-top:4px" th:text="${r.createdAt != null ? r.createdAt.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd')) : ''}"></div>
+                    </div>
+                    <div style="color:#f59e0b;font-weight:700" th:text="${r.rating} + '★'"></div>
+                </div>
+                <p style="margin-top:8px;color:#334155" th:text="${r.comment}"></p>
+            </div>
+        </div>
+
+        <div>
+            <div th:if="${currentUser != null}" class="card">
+                <h4 style="margin-top:0">Write a Review</h4>
+                <form th:action="@{/faculty/{id}/reviews(id=${faculty.id})}" method="post">
+                    <div style="margin-bottom:8px">
+                        <label>Rating</label>
+                        <select name="rating" style="width:100%;padding:8px;margin-top:6px">
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Below Average</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:8px">
+                        <label>Your Name (optional)</label>
+                        <input type="text" name="studentName" style="width:100%;padding:8px;margin-top:6px" placeholder="Anonymous" />
+                    </div>
+                    <div style="margin-bottom:8px">
+                        <label>Comment</label>
+                        <textarea name="comment" rows="4" style="width:100%;padding:8px;margin-top:6px" required></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit Review</button>
+                </form>
+            </div>
+            <div th:if="${currentUser == null}" class="card">
+                <p>Log in to write a review.</p>
+                <a th:href="@{/login}" class="btn btn-primary">Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

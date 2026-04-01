@@ -25,6 +25,11 @@
         .meta{color:#64748b;font-size:14px}
         .avatar{width:96px;height:96px;border-radius:9999px;overflow:hidden;border:4px solid #fff;background:#fff}
         .center{text-align:center}
+        .profile{position:relative}
+        .profile-menu{position:absolute;right:0;top:44px;background:#fff;border:1px solid #e6eef8;border-radius:8px;padding:8px;box-shadow:0 8px 24px rgba(2,6,23,0.08);display:none}
+        .profile:hover .profile-menu{display:block}
+        .profile a{display:block;padding:6px 10px;color:#0f172a;text-decoration:none}
+        .profile a:hover{background:#f1f5f9}
     </style>
 </head>
 <body>
@@ -35,7 +40,21 @@
             <div class="subtitle">Find and review your instructors to help others.</div>
         </div>
         <div>
-            <a th:href="@{/login}" style="padding:10px 18px;background:#1d4ed8;color:white;border-radius:999px;text-decoration:none;font-weight:700">Login / Sign Up</a>
+            <div class="profile">
+                <div th:if="${currentUser != null}">
+                    <button style="background:#fff;border-radius:9999px;padding:8px;border:1px solid #e6eef8;cursor:pointer">
+                        <img th:src="@{/images/nuces.jpg}" alt="profile" style="width:28px;height:28px;border-radius:9999px;vertical-align:middle" />
+                    </button>
+                    <div class="profile-menu">
+                        <a th:href="@{/profile}">Profile</a>
+                        <a th:href="@{/settings}">Settings</a>
+                        <a th:href="@{/logout}">Logout</a>
+                    </div>
+                </div>
+                <div th:if="${currentUser == null}">
+                    <button style="background:#1d4ed8;color:white;padding:8px 12px;border-radius:9999px;border:none"><a th:href="@{/login}" style="color:inherit;text-decoration:none">Login / Sign Up</a></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -60,17 +79,19 @@
     </div>
 
     <div class="grid">
-        <div th:each="f : ${faculty}" class="card">
-            <div class="info">
-                <h3 th:text="${f.name}">Prof Name</h3>
-                <div class="tag" th:text="${f.department}">CS</div>
-                <div class="meta" style="margin-top:8px">New • 0 Reviews</div>
+        <a th:each="f : ${faculty}" th:href="@{/faculty/{id}(id=${f.id})}" style="text-decoration:none;color:inherit">
+            <div class="card">
+                <div class="info">
+                    <h3 th:text="${f.name}">Prof Name</h3>
+                    <div class="tag" th:text="${f.department}">CS</div>
+                    <div class="meta" style="margin-top:8px">New • 0 Reviews</div>
+                </div>
+                <div class="avatar">
+                    <img th:if="${f.imageUrl}" th:src="${f.imageUrl}" th:alt="${f.name}" style="width:100%;height:100%;object-fit:cover"/>
+                    <div th:if="${f.imageUrl==null}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;color:#cbd5e1">👤</div>
+                </div>
             </div>
-            <div class="avatar">
-                <img th:if="${f.imageUrl}" th:src="${f.imageUrl}" th:alt="${f.name}" style="width:100%;height:100%;object-fit:cover"/>
-                <div th:if="${f.imageUrl==null}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;color:#cbd5e1">👤</div>
-            </div>
-        </div>
+        </a>
     </div>
 
 </div>

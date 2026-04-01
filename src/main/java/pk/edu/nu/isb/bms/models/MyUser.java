@@ -33,10 +33,14 @@ public class MyUser {
     @Column(nullable = false)
     private boolean accountLocked;
 
+    @Column(nullable = false, length = 20)
+    private String role;
+
     @PrePersist
     void initDefaults() {
         this.enabled = true;
         this.accountLocked = false;
+        if (this.role == null) this.role = "STUDENT";
     }
 
     public Long getId() {
@@ -71,5 +75,13 @@ public class MyUser {
         this.password = password;
     }
 
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public boolean isAccountLocked() { return accountLocked; }
+    public void setAccountLocked(boolean accountLocked) { this.accountLocked = accountLocked; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
 }

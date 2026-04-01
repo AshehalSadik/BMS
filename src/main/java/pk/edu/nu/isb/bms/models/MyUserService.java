@@ -52,6 +52,7 @@ public class MyUserService implements UserDetailsService {
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
+        // default role set in entity pre-persist
         saveUser(user);
     }
 
@@ -82,12 +83,13 @@ public class MyUserService implements UserDetailsService {
         Optional<MyUser> user = userRepository.findByUsername(username);
         if (user.isPresent()) {
             var userObj = user.get();
+            String role = userObj.getRole() == null ? "STUDENT" : userObj.getRole();
             return User.builder()
                     .username(userObj.getUsername())
                     .password(userObj.getPassword())
                     .disabled(!userObj.isEnabled())
                     .accountLocked(userObj.isAccountLocked())
-                    .roles("USER")
+                    .roles(role) // map DB role to Spring Security roles
                     .build();
         }
         throw new UsernameNotFoundException(username);

@@ -32,6 +32,9 @@
           <input id="password" name="password" type="password" required autocomplete="current-password" placeholder=" " />
           <label for="password">Password</label>
           <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+          <button type="button" id="togglePassword" aria-label="Show password" style="position:absolute;right:34px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;padding:0;line-height:0;">
+            <ion-icon id="togglePasswordIcon" name="eye-off-outline"></ion-icon>
+          </button>
         </div>
 
         <div class="helpers">
@@ -48,7 +51,19 @@
   </main>
 
   <script>
-    // placeholder script block (no-op)
+    (function () {
+      const password = document.getElementById('password');
+      const toggle = document.getElementById('togglePassword');
+      const icon = document.getElementById('togglePasswordIcon');
+      if (!password || !toggle || !icon) return;
+
+      toggle.addEventListener('click', function () {
+        const hidden = password.type === 'password';
+        password.type = hidden ? 'text' : 'password';
+        icon.setAttribute('name', hidden ? 'eye-outline' : 'eye-off-outline');
+        toggle.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+      });
+    })();
   </script>
 </body>
 </html>

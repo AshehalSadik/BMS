@@ -1,11 +1,11 @@
 package pk.edu.nu.isb.bms.controllers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import pk.edu.nu.isb.bms.models.DuplicateUserFieldException;
 import pk.edu.nu.isb.bms.models.RegistrationRequest;
 import pk.edu.nu.isb.bms.models.WeakPasswordException;
@@ -13,8 +13,6 @@ import jakarta.validation.ConstraintViolationException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(DuplicateUserFieldException.class)
     public String handleDuplicateUserField(DuplicateUserFieldException ex, Model model) {
@@ -36,11 +34,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({DataIntegrityViolationException.class, ConstraintViolationException.class})
     public String handleDatabaseConstraint(Exception ex, Model model) {
-        logger.error("Database constraint exception while processing request", ex);
         model.addAttribute("signupError", "Unable to process request due to data constraints. Please verify your input.");
         if (!model.containsAttribute("registrationRequest")) {
             model.addAttribute("registrationRequest", new RegistrationRequest());
         }
         return "signup";
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String handleIllegalArgument(IllegalArgumentException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        // Put the error message into flash attributes so the admin page can display it
+        redirectAttributes.addFlashAttribute("adminError", ex.getMessage());
+
+        // If the request came from admin pages, redirect to /admin, otherwise back to root
+        String referer = request.getHeader("Referer");
+        if (referer != null && referer.contains("/admin")) {
+            return "redirect:/admin";
+        }
+        return "redirect:/";
     }
 }
