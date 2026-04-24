@@ -56,7 +56,9 @@ public class ContentController {
     }
 
     @GetMapping("/faculty/{id}")
-    public String facultyDetail(@PathVariable Long id, Model model) {
+    public String facultyDetail(@PathVariable Long id,
+                            @RequestParam(value = "reviewSubmitted", required = false) String reviewSubmitted,
+                            Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean authenticated = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
         if (!authenticated) {
@@ -72,6 +74,7 @@ public class ContentController {
         model.addAttribute("faculty", f);
         model.addAttribute("reviews", reviewRepository.findByFaculty_Id(id));
         model.addAttribute("courses", findCoursesForFaculty(id));
+        model.addAttribute("reviewSubmitted", reviewSubmitted != null);
         userRepository.findByUsername(auth.getName()).ifPresentOrElse(
                 u -> model.addAttribute("currentUser", u),
                 () -> model.addAttribute("currentUser", null)
@@ -81,17 +84,17 @@ public class ContentController {
 
     @PostMapping("/faculty/{id}/reviews")
     public String addReview(@PathVariable Long id,
-                            @RequestParam(required = false) Integer rating,
-                            @RequestParam String comment,
-                            @RequestParam(required = false) Long courseId,
-                            @RequestParam(required = false) Integer subjectMatterKnowledge,
-                            @RequestParam(required = false) Integer teachingMethods,
-                            @RequestParam(required = false) Integer studentEngagement,
-                            @RequestParam(required = false) Integer collaborationTeamwork,
-                            @RequestParam(required = false) Integer behaviorManagement,
-                            @RequestParam(required = false) Integer classroomEnvironment,
-                            @RequestParam(required = false) Integer professionalEthics,
-                            @RequestParam(required = false) Integer communicationSkills) {
+                        @RequestParam(required = false) Integer rating,
+                        @RequestParam String comment,
+                        @RequestParam(required = false) Long courseId,
+                        @RequestParam(required = false) Integer subjectMatterKnowledge,
+                        @RequestParam(required = false) Integer teachingMethods,
+                        @RequestParam(required = false) Integer studentEngagement,
+                        @RequestParam(required = false) Integer collaborationTeamwork,
+                        @RequestParam(required = false) Integer behaviorManagement,
+                        @RequestParam(required = false) Integer classroomEnvironment,
+                        @RequestParam(required = false) Integer professionalEthics,
+                        @RequestParam(required = false) Integer communicationSkills) {
         int baseRating = normalizeRating(rating == null ? 5 : rating);
 
         short smk = (short) normalizeRating(subjectMatterKnowledge == null ? baseRating : subjectMatterKnowledge);
@@ -128,7 +131,7 @@ public class ContentController {
         // Enforce anonymity: always store 'Anonymous'
         r.setStudentName("Anonymous");
         reviewRepository.save(r);
-        return "redirect:/faculty/" + id;
+        return "redirect:/faculty/" + id + "?reviewSubmitted=1";
     }
 
     private int normalizeRating(int rating) {

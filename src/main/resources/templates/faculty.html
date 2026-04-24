@@ -6,11 +6,38 @@
     <title th:text="${faculty.name} + ' - Profile'"></title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <style>
-        body { font-family: Inter, system-ui, -apple-system, Roboto, Arial; background:#f8fafc; color:#0f172a; }
-        .container{max-width:900px;margin:24px auto;padding:0 16px}
-        .card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);border:1px solid #eef2ff}
-        .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
-        .btn-primary{background:#1d4ed8;color:white}
+        body { font-family: Inter, system-ui, -apple-system, Roboto, Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+        .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+        .card { background: #fff; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06); border: 1px solid #e2e8f0; }
+        .btn { padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .grid { display: grid; grid-template-columns: 1fr 420px; gap: 24px; }
+        .field { margin-bottom: 12px; }
+        .field label { display: block; margin-bottom: 6px; font-size: 13px; color: #334155; font-weight: 600; }
+        .input, .select, .textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+        .textarea { min-height: 110px; resize: vertical; }
+        .criteria-grid { display: grid; grid-template-columns: 1fr 140px; gap: 8px 12px; margin: 12px 0 16px; }
+        .criteria-grid .criterion-name { font-size: 13px; color: #334155; align-self: center; }
+        .review-meta { color: #64748b; font-size: 13px; margin-top: 4px; }
+        .review-rating { color: #f59e0b; font-weight: 700; }
+        .review-course { display: inline-block; margin-top: 6px; font-size: 12px; color: #1d4ed8; background: #eff6ff; padding: 3px 8px; border-radius: 999px; }
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #16a34a;
+            color: #fff;
+            padding: 12px 14px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        @media (max-width: 980px) {
+            .grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -18,27 +45,29 @@
     <a th:href="@{/}" style="color:#2563eb;display:inline-block;margin-bottom:12px">← Back to Faculty List</a>
 
     <div class="card" style="display:flex;gap:20px;align-items:center;margin-bottom:20px">
-        <div style="width:96px;height:96px;border-radius:999px;overflow:hidden;border:4px solid #e6f0ff;flex-shrink:0">
-            <img th:if="${faculty.imageUrl != null}" th:src="${faculty.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover" />
-            <div th:if="${faculty.imageUrl == null}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;color:#cbd5e1">👤</div>
+        <div style="width:110px;height:110px;border-radius:999px;overflow:hidden;border:4px solid #e6f0ff;flex-shrink:0">
+            <img th:if="${faculty.imageUrl != null}" th:src="${faculty.imageUrl}" th:alt="${faculty.name}" style="width:100%;height:100%;object-fit:cover" />
+            <div th:if="${faculty.imageUrl == null}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;color:#cbd5e1">👤</div>
         </div>
         <div>
-            <h1 th:text="${faculty.name}" style="font-size:26px;margin:0"></h1>
+            <h1 th:text="${faculty.name}" style="font-size:30px;margin:0"></h1>
             <div th:if="${faculty.department != null}" th:text="${faculty.department}" style="color:#2563eb;font-weight:600;margin-top:6px"></div>
+            <p th:if="${faculty.bio != null and !#strings.isEmpty(faculty.bio)}" th:text="${faculty.bio}" style="margin-top:8px;color:#475569"></p>
         </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 360px;gap:24px">
+    <div class="grid">
         <div>
             <h3 style="margin-bottom:12px">Student Reviews</h3>
             <div th:if="${#lists.isEmpty(reviews)}" class="card">No reviews yet.</div>
             <div th:each="r: ${reviews}" class="card" style="margin-bottom:12px">
-                <div style="display:flex;justify-content:space-between;align-items:start">
+                <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
                     <div>
-                        <strong th:text="${r.studentName}"></strong>
-                        <div style="color:#64748b;font-size:13px;margin-top:4px" th:text="${r.createdAt != null ? r.createdAt.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd')) : ''}"></div>
+                        <strong>Anonymous</strong>
+                        <div class="review-meta" th:text="${r.createdAt != null ? r.createdAt.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd')) : ''}"></div>
+                        <span th:if="${r.course != null}" class="review-course" th:text="${r.course.code + ' - ' + r.course.title}"></span>
                     </div>
-                    <div style="color:#f59e0b;font-weight:700" th:text="${r.rating} + '★'"></div>
+                    <div class="review-rating" th:text="${r.rating} + '★'"></div>
                 </div>
                 <p style="margin-top:8px;color:#334155" th:text="${r.comment}"></p>
             </div>
@@ -46,25 +75,69 @@
 
         <div>
             <div th:if="${currentUser != null}" class="card">
-                <h4 style="margin-top:0">Write a Review</h4>
+                <h4 style="margin-top:0;margin-bottom:10px">Write an Anonymous Review</h4>
                 <form th:action="@{/faculty/{id}/reviews(id=${faculty.id})}" method="post">
-                    <div style="margin-bottom:8px">
-                        <label>Rating</label>
-                        <select name="rating" style="width:100%;padding:8px;margin-top:6px">
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Good</option>
-                            <option value="3">3 - Average</option>
-                            <option value="2">2 - Below Average</option>
-                            <option value="1">1 - Poor</option>
+                    <div class="field">
+                        <label for="courseSearch">Course (optional)</label>
+                        <input id="courseSearch" type="text" class="input" placeholder="Search course by code or title" />
+                    </div>
+                    <div class="field">
+                        <select id="courseId" name="courseId" class="select">
+                            <option value="">Select a course</option>
+                            <option th:each="c : ${courses}"
+                                    th:value="${c.id}"
+                                    th:text="${c.code + ' - ' + c.title}"
+                                    th:attr="data-label=${(c.code + ' - ' + c.title).toLowerCase()}">
+                            </option>
                         </select>
                     </div>
-                    <div style="margin-bottom:8px">
-                        <label>Your Name (optional)</label>
-                        <input type="text" name="studentName" style="width:100%;padding:8px;margin-top:6px" placeholder="Anonymous" />
+
+                    <h5 style="margin:12px 0 8px">Rate Each Criterion (1-5)</h5>
+                    <div class="criteria-grid">
+                        <div class="criterion-name">Subject Matter Knowledge</div>
+                        <select class="select" name="subjectMatterKnowledge" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Teaching Methods</div>
+                        <select class="select" name="teachingMethods" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Student Engagement</div>
+                        <select class="select" name="studentEngagement" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Collaboration &amp; Teamwork</div>
+                        <select class="select" name="collaborationTeamwork" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Behavior Management</div>
+                        <select class="select" name="behaviorManagement" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Classroom Environment</div>
+                        <select class="select" name="classroomEnvironment" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Responsibility &amp; Professional Ethics</div>
+                        <select class="select" name="professionalEthics" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
+
+                        <div class="criterion-name">Communication Skills</div>
+                        <select class="select" name="communicationSkills" required>
+                            <option value="5" selected>5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                        </select>
                     </div>
-                    <div style="margin-bottom:8px">
-                        <label>Comment</label>
-                        <textarea name="comment" rows="4" style="width:100%;padding:8px;margin-top:6px" required></textarea>
+
+                    <div class="field">
+                        <label for="comment">Comment</label>
+                        <textarea id="comment" class="textarea" name="comment" placeholder="Share your experience with this instructor" required></textarea>
                     </div>
                     <button class="btn btn-primary" type="submit">Submit Review</button>
                 </form>
@@ -76,5 +149,33 @@
         </div>
     </div>
 </div>
+
+<div class="toast" th:if="${reviewSubmitted}" id="reviewToast">Review submitted successfully.</div>
+
+<script>
+    (function () {
+        const search = document.getElementById('courseSearch');
+        const select = document.getElementById('courseId');
+        if (search && select) {
+            search.addEventListener('input', function () {
+                const q = search.value.trim().toLowerCase();
+                for (const option of select.options) {
+                    if (!option.value) continue;
+                    const label = option.getAttribute('data-label') || option.textContent.toLowerCase();
+                    option.hidden = q.length > 0 && !label.includes(q);
+                }
+            });
+        }
+
+        const toast = document.getElementById('reviewToast');
+        if (toast) {
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 240ms ease';
+                setTimeout(function () { toast.remove(); }, 260);
+            }, 2400);
+        }
+    })();
+</script>
 </body>
 </html>
