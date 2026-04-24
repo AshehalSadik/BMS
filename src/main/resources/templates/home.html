@@ -84,7 +84,14 @@
                 <div class="info">
                     <h3 th:text="${f.name}">Prof Name</h3>
                     <div class="tag" th:text="${f.department}">CS</div>
-                    <div class="meta" style="margin-top:8px">New • 0 Reviews</div>
+                    <div class="meta" style="margin-top:8px"
+                         th:if="${reviewCountByFacultyId[f.id] != null and reviewCountByFacultyId[f.id] > 0}"
+                         th:text="${averageRatingByFacultyId[f.id] + '★ • ' + reviewCountByFacultyId[f.id] + ' Reviews'}">
+                    </div>
+                    <div class="meta" style="margin-top:8px"
+                         th:if="${reviewCountByFacultyId[f.id] == null or reviewCountByFacultyId[f.id] == 0}">
+                        New • 0 Reviews
+                    </div>
                 </div>
                 <div class="avatar">
                     <img th:if="${f.imageUrl}" th:src="${f.imageUrl}" th:alt="${f.name}" style="width:100%;height:100%;object-fit:cover"/>

@@ -10,7 +10,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pk.edu.nu.isb.bms.models.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ContentController {
@@ -43,9 +45,36 @@ public class ContentController {
             return "redirect:/login";
         }
 
+        List<Faculty> facultyList = facultyService.search(q, dept);
+        Map<Long, Long> reviewCountByFacultyId = new HashMap<>();
+        Map<Long, Double> averageRatingByFacultyId = new HashMap<>();
+
+        for (Review review : reviewRepository.findAll()) {
+            if (review.getFaculty() == null || review.getFaculty().getId() == null) {
+                continue;
+            }
+            Long facultyId = review.getFaculty().getId();
+            reviewCountByFacultyId.put(facultyId, reviewCountByFacultyId.getOrDefault(facultyId, 0L) + 1L);
+            averageRatingByFacultyId.put(facultyId, averageRatingByFacultyId.getOrDefault(facultyId, 0.0) + review.getRating());
+        }
+
+        for (Faculty faculty : facultyList) {
+            if (faculty.getId() == null) {
+                continue;
+            }
+            Long count = reviewCountByFacultyId.getOrDefault(faculty.getId(), 0L);
+            if (count > 0) {
+                double sum = averageRatingByFacultyId.getOrDefault(faculty.getId(), 0.0);
+                double avg = Math.round((sum / count) * 10.0) / 10.0;
+                averageRatingByFacultyId.put(faculty.getId(), avg);
+            }
+        }
+
         model.addAttribute("q", q == null ? "" : q);
         model.addAttribute("dept", dept == null ? "All" : dept);
-        model.addAttribute("faculty", facultyService.search(q, dept));
+        model.addAttribute("faculty", facultyList);
+        model.addAttribute("reviewCountByFacultyId", reviewCountByFacultyId);
+        model.addAttribute("averageRatingByFacultyId", averageRatingByFacultyId);
 
         userRepository.findByUsername(auth.getName()).ifPresentOrElse(
                 u -> model.addAttribute("currentUser", u),
