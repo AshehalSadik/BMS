@@ -1,5 +1,6 @@
 package pk.edu.nu.isb.bms.controllers;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,6 +10,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pk.edu.nu.isb.bms.models.*;
 
+import java.util.List;
+
 @Controller
 public class ContentController {
 
@@ -16,12 +19,18 @@ public class ContentController {
     private final FacultyService facultyService;
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
-    public ContentController(MyUserService userService, FacultyService facultyService, ReviewRepository reviewRepository, UserRepository userRepository) {
+    public ContentController(MyUserService userService,
+                             FacultyService facultyService,
+                             ReviewRepository reviewRepository,
+                             UserRepository userRepository,
+                             EntityManager entityManager) {
         this.userService = userService;
         this.facultyService = facultyService;
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
     @GetMapping("/")
@@ -62,6 +71,7 @@ public class ContentController {
         Faculty f = maybe.get();
         model.addAttribute("faculty", f);
         model.addAttribute("reviews", reviewRepository.findByFaculty_Id(id));
+        model.addAttribute("courses", findCoursesForFaculty(id));
         userRepository.findByUsername(auth.getName()).ifPresentOrElse(
                 u -> model.addAttribute("currentUser", u),
                 () -> model.addAttribute("currentUser", null)
@@ -71,17 +81,77 @@ public class ContentController {
 
     @PostMapping("/faculty/{id}/reviews")
     public String addReview(@PathVariable Long id,
-                            @RequestParam int rating,
-                            @RequestParam String comment) {
-        // Enforce anonymity: do not record reviewer user id
+                            @RequestParam(required = false) Integer rating,
+                            @RequestParam String comment,
+                            @RequestParam(required = false) Long courseId,
+                            @RequestParam(required = false) Integer subjectMatterKnowledge,
+                            @RequestParam(required = false) Integer teachingMethods,
+                            @RequestParam(required = false) Integer studentEngagement,
+                            @RequestParam(required = false) Integer collaborationTeamwork,
+                            @RequestParam(required = false) Integer behaviorManagement,
+                            @RequestParam(required = false) Integer classroomEnvironment,
+                            @RequestParam(required = false) Integer professionalEthics,
+                            @RequestParam(required = false) Integer communicationSkills) {
+        int baseRating = normalizeRating(rating == null ? 5 : rating);
+
+        short smk = (short) normalizeRating(subjectMatterKnowledge == null ? baseRating : subjectMatterKnowledge);
+        short tm = (short) normalizeRating(teachingMethods == null ? baseRating : teachingMethods);
+        short se = (short) normalizeRating(studentEngagement == null ? baseRating : studentEngagement);
+        short ct = (short) normalizeRating(collaborationTeamwork == null ? baseRating : collaborationTeamwork);
+        short bm = (short) normalizeRating(behaviorManagement == null ? baseRating : behaviorManagement);
+        short ce = (short) normalizeRating(classroomEnvironment == null ? baseRating : classroomEnvironment);
+        short pe = (short) normalizeRating(professionalEthics == null ? baseRating : professionalEthics);
+        short cs = (short) normalizeRating(communicationSkills == null ? baseRating : communicationSkills);
+
         Review r = new Review();
-        r.setFaculty(new FacultyEntity() {{ setId(id); }});
-        r.setRating(rating);
-        r.setComment(comment);
+        FacultyEntity facultyRef = new FacultyEntity();
+        facultyRef.setId(id);
+        r.setFaculty(facultyRef);
+
+        if (courseId != null && isCourseAssignedToFaculty(courseId, id)) {
+            r.setCourse(entityManager.getReference(Course.class, courseId));
+        }
+
+        r.setSubjectMatterKnowledge(smk);
+        r.setTeachingMethods(tm);
+        r.setStudentEngagement(se);
+        r.setCollaborationTeamwork(ct);
+        r.setBehaviorManagement(bm);
+        r.setClassroomEnvironment(ce);
+        r.setProfessionalEthics(pe);
+        r.setCommunicationSkills(cs);
+
+        int avg = Math.round((smk + tm + se + ct + bm + ce + pe + cs) / 8.0f);
+        r.setRating(normalizeRating(avg));
+        r.setComment(comment == null ? "" : comment.trim());
+
         // Enforce anonymity: always store 'Anonymous'
         r.setStudentName("Anonymous");
         reviewRepository.save(r);
         return "redirect:/faculty/" + id;
+    }
+
+    private int normalizeRating(int rating) {
+        if (rating < 1) return 1;
+        return Math.min(rating, 5);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Course> findCoursesForFaculty(Long facultyId) {
+        return entityManager.createNativeQuery(
+                        "SELECT c.* FROM courses c INNER JOIN faculty_courses fc ON fc.course_id = c.id WHERE fc.faculty_id = :facultyId ORDER BY c.code",
+                        Course.class)
+                .setParameter("facultyId", facultyId)
+                .getResultList();
+    }
+
+    private boolean isCourseAssignedToFaculty(Long courseId, Long facultyId) {
+        Object value = entityManager.createNativeQuery(
+                        "SELECT EXISTS (SELECT 1 FROM faculty_courses WHERE faculty_id = :facultyId AND course_id = :courseId)")
+                .setParameter("facultyId", facultyId)
+                .setParameter("courseId", courseId)
+                .getSingleResult();
+        return value instanceof Boolean b ? b : "t".equalsIgnoreCase(String.valueOf(value));
     }
 
     @GetMapping("/login")
