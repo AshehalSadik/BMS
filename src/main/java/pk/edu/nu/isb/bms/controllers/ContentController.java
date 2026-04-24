@@ -87,6 +87,7 @@ public class ContentController {
     @GetMapping("/faculty/{id}")
     public String facultyDetail(@PathVariable Long id,
                                 @RequestParam(value = "reviewSubmitted", required = false) String reviewSubmitted,
+                                @RequestParam(value = "reviewReported", required = false) String reviewReported,
                                 Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean authenticated = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
@@ -106,6 +107,7 @@ public class ContentController {
         model.addAttribute("reviews", reviews);
         model.addAttribute("courses", findCoursesForFaculty(id));
         model.addAttribute("reviewSubmitted", reviewSubmitted != null);
+        model.addAttribute("reviewReported", reviewReported != null);
 
         model.addAttribute("criteriaLabels", List.of(
                 "Subject Matter Knowledge",
@@ -259,6 +261,16 @@ public class ContentController {
         userService.registerUser(request);
         // After successful registration redirect to login page so user can sign in
         return "redirect:/login?registered=true";
+    }
+
+    @PostMapping("/faculty/{facultyId}/reviews/{reviewId}/report")
+    public String reportReview(@PathVariable Long facultyId,
+                               @PathVariable Long reviewId) {
+        reviewRepository.findByIdAndFaculty_Id(reviewId, facultyId).ifPresent(review -> {
+            review.setReported(true);
+            reviewRepository.save(review);
+        });
+        return "redirect:/faculty/" + facultyId + "?reviewReported=1";
     }
 
     private double averageScore(List<Review> reviews, String criterion) {

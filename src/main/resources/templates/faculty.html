@@ -81,6 +81,9 @@
                     <div class="review-rating" th:text="${r.rating} + '★'"></div>
                 </div>
                 <p style="margin-top:8px;color:#334155" th:text="${r.comment}"></p>
+                <form th:action="@{/faculty/{facultyId}/reviews/{reviewId}/report(facultyId=${faculty.id},reviewId=${r.id})}" method="post" style="margin-top:8px;text-align:right">
+                    <button type="submit" class="btn" style="background:#fff;border:1px solid #e2e8f0;color:#334155;padding:6px 10px">Report</button>
+                </form>
             </div>
         </div>
 
@@ -162,6 +165,7 @@
 </div>
 
 <div class="toast" th:if="${reviewSubmitted}" id="reviewToast">Review submitted successfully.</div>
+<div class="toast" th:if="${reviewReported}" id="reportToast" style="background:#2563eb">Review reported for moderation.</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:inline="javascript">
@@ -220,6 +224,15 @@
                 toast.style.opacity = '0';
                 toast.style.transition = 'opacity 240ms ease';
                 setTimeout(function () { toast.remove(); }, 260);
+            }, 2400);
+        }
+
+        const reportToast = document.getElementById('reportToast');
+        if (reportToast) {
+            setTimeout(function () {
+                reportToast.style.opacity = '0';
+                reportToast.style.transition = 'opacity 240ms ease';
+                setTimeout(function () { reportToast.remove(); }, 260);
             }, 2400);
         }
     })();
