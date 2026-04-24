@@ -11,6 +11,8 @@ import pk.edu.nu.isb.bms.models.RegistrationRequest;
 import pk.edu.nu.isb.bms.models.WeakPasswordException;
 import jakarta.validation.ConstraintViolationException;
 
+import java.util.NoSuchElementException;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -41,12 +43,10 @@ public class GlobalExceptionHandler {
         return "signup";
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public String handleIllegalArgument(IllegalArgumentException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
-        // Put the error message into flash attributes so the admin page can display it
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, NoSuchElementException.class})
+    public String handleAdminAndValidationErrors(RuntimeException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute("adminError", ex.getMessage());
 
-        // If the request came from admin pages, redirect to /admin, otherwise back to root
         String referer = request.getHeader("Referer");
         if (referer != null && referer.contains("/admin")) {
             return "redirect:/admin";

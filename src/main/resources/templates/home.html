@@ -30,6 +30,9 @@
         .profile:hover .profile-menu{display:block}
         .profile a{display:block;padding:6px 10px;color:#0f172a;text-decoration:none}
         .profile a:hover{background:#f1f5f9}
+        .profile-menu form{margin:0}
+        .profile-menu .menu-btn{display:block;width:100%;text-align:left;padding:6px 10px;background:none;border:none;color:#0f172a;cursor:pointer}
+        .profile-menu .menu-btn:hover{background:#f1f5f9}
     </style>
 </head>
 <body>
@@ -48,7 +51,9 @@
                     <div class="profile-menu">
                         <a th:href="@{/profile}">Profile</a>
                         <a th:href="@{/settings}">Settings</a>
-                        <a th:href="@{/logout}">Logout</a>
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit" class="menu-btn">Logout</button>
+                        </form>
                     </div>
                 </div>
                 <div th:if="${currentUser == null}">
