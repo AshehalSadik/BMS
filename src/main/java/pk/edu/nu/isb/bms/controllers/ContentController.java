@@ -57,8 +57,8 @@ public class ContentController {
 
     @GetMapping("/faculty/{id}")
     public String facultyDetail(@PathVariable Long id,
-                            @RequestParam(value = "reviewSubmitted", required = false) String reviewSubmitted,
-                            Model model) {
+                                @RequestParam(value = "reviewSubmitted", required = false) String reviewSubmitted,
+                                Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean authenticated = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
         if (!authenticated) {
@@ -71,10 +71,35 @@ public class ContentController {
             return "faculty-not-found";
         }
         Faculty f = maybe.get();
+        List<Review> reviews = reviewRepository.findByFaculty_Id(id);
+
         model.addAttribute("faculty", f);
-        model.addAttribute("reviews", reviewRepository.findByFaculty_Id(id));
+        model.addAttribute("reviews", reviews);
         model.addAttribute("courses", findCoursesForFaculty(id));
         model.addAttribute("reviewSubmitted", reviewSubmitted != null);
+
+        model.addAttribute("criteriaLabels", List.of(
+                "Subject Matter Knowledge",
+                "Teaching Methods",
+                "Student Engagement",
+                "Collaboration & Teamwork",
+                "Behavior Management",
+                "Classroom Environment",
+                "Professional Ethics",
+                "Communication Skills"
+        ));
+
+        model.addAttribute("criteriaAverages", List.of(
+                averageScore(reviews, "smk"),
+                averageScore(reviews, "tm"),
+                averageScore(reviews, "se"),
+                averageScore(reviews, "ct"),
+                averageScore(reviews, "bm"),
+                averageScore(reviews, "ce"),
+                averageScore(reviews, "pe"),
+                averageScore(reviews, "cs")
+        ));
+
         userRepository.findByUsername(auth.getName()).ifPresentOrElse(
                 u -> model.addAttribute("currentUser", u),
                 () -> model.addAttribute("currentUser", null)
@@ -205,5 +230,33 @@ public class ContentController {
         userService.registerUser(request);
         // After successful registration redirect to login page so user can sign in
         return "redirect:/login?registered=true";
+    }
+
+    private double averageScore(List<Review> reviews, String criterion) {
+        if (reviews == null || reviews.isEmpty()) {
+            return 0.0;
+        }
+
+        double total = 0.0;
+        for (Review r : reviews) {
+            total += switch (criterion) {
+                case "smk" -> scoreOrRating(r.getSubjectMatterKnowledge(), r.getRating());
+                case "tm" -> scoreOrRating(r.getTeachingMethods(), r.getRating());
+                case "se" -> scoreOrRating(r.getStudentEngagement(), r.getRating());
+                case "ct" -> scoreOrRating(r.getCollaborationTeamwork(), r.getRating());
+                case "bm" -> scoreOrRating(r.getBehaviorManagement(), r.getRating());
+                case "ce" -> scoreOrRating(r.getClassroomEnvironment(), r.getRating());
+                case "pe" -> scoreOrRating(r.getProfessionalEthics(), r.getRating());
+                case "cs" -> scoreOrRating(r.getCommunicationSkills(), r.getRating());
+                default -> r.getRating();
+            };
+        }
+
+        double avg = total / reviews.size();
+        return Math.round(avg * 10.0) / 10.0;
+    }
+
+    private int scoreOrRating(short criterionScore, int rating) {
+        return criterionScore > 0 ? criterionScore : rating;
     }
 }
