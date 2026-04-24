@@ -6,17 +6,25 @@
     <title>Admin Dashboard - Faculty Reviews</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <style>
-        body { font-family: Inter, system-ui, -apple-system, Roboto, Arial; background:#f8fafc; color:#0f172a; }
-        .container{max-width:1200px;margin:24px auto;padding:0 16px}
+        body { font-family: Inter, system-ui, -apple-system, Roboto, Arial, sans-serif; background:#f8fafc; color:#0f172a; }
+        .container{max-width:1280px;margin:24px auto;padding:0 16px}
         .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
         .title{font-size:28px;font-weight:800}
-        .section{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px;border:1px solid #eef2ff}
+        .section{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px;border:1px solid #e2e8f0}
         .grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
         table{width:100%;border-collapse:collapse}
-        th,td{padding:8px;border-bottom:1px solid #eee}
+        th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
         .btn{padding:6px 10px;border-radius:8px;border:none;cursor:pointer}
         .btn-danger{background:#ef4444;color:white}
         .btn-primary{background:#1d4ed8;color:white}
+        .btn-secondary{background:#e2e8f0;color:#0f172a}
+        .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,0.5);display:none;align-items:center;justify-content:center;z-index:1000}
+        .modal{background:#fff;border-radius:12px;padding:16px;max-width:420px;width:92%;border:1px solid #e2e8f0}
+        .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+        .toast{position:fixed;right:18px;bottom:18px;background:#16a34a;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 20px rgba(22,163,74,0.25);z-index:1200;font-size:14px;font-weight:600}
+        .row-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .chart-wrap { position: relative; height: 280px; width: 100%; }
+        @media (max-width: 980px){.grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -26,11 +34,60 @@
         <div>Welcome, Admin</div>
     </div>
 
-    <!-- display admin action errors (from flash attributes) -->
     <div th:if="${adminError}" style="background:#fff3f2;color:#b91c1c;padding:8px;border-radius:8px;margin-bottom:12px" th:text="${adminError}"></div>
+    <div class="toast" th:if="${param.reviewDeleted}" id="toastDeleted">Review deleted successfully.</div>
 
     <div class="grid">
         <div>
+            <div class="section">
+                <h3>User Growth Analytics</h3>
+                <form class="row-inline" th:action="@{/admin}" method="get" style="margin-bottom:12px">
+                    <label for="interval">Interval</label>
+                    <select id="interval" name="interval">
+                        <option value="7d" th:selected="${growthInterval == '7d'}">Last 7 days</option>
+                        <option value="30d" th:selected="${growthInterval == '30d'}">Last 30 days</option>
+                        <option value="year" th:selected="${growthInterval == 'year'}">Yearly</option>
+                    </select>
+                    <button class="btn btn-primary" type="submit">Apply</button>
+                </form>
+                <div class="chart-wrap">
+                    <canvas id="usersGrowthChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Review Management</h3>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Reviewer</th>
+                        <th>Teacher</th>
+                        <th>Course</th>
+                        <th>Date Submitted</th>
+                        <th>Average Rating</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${reviewRows}">
+                        <td th:text="${r.reviewer}"></td>
+                        <td th:text="${r.teacherName}"></td>
+                        <td th:text="${r.course}"></td>
+                        <td th:text="${r.submittedAt != null ? r.submittedAt.toString() : '-'}"></td>
+                        <td th:text="${r.averageRating} + '/5'"></td>
+                        <td>
+                            <button class="btn btn-danger"
+                                    type="button"
+                                    th:attr="data-review-id=${r.id},data-review-label=${'Review #' + r.id + ' for ' + r.teacherName}"
+                                    onclick="openDeleteModal(this)">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <div class="section">
                 <h3>Users</h3>
                 <table>
@@ -65,9 +122,12 @@
                         <td th:text="${r.faculty.name}"></td>
                         <td th:text="${r.comment}"></td>
                         <td>
-                            <form th:action="@{/admin/reviews/{id}/delete(id=${r.id})}" method="post">
-                                <button class="btn btn-danger" type="submit">Delete</button>
-                            </form>
+                            <button class="btn btn-danger"
+                                    type="button"
+                                    th:attr="data-review-id=${r.id},data-review-label=${'Reported review #' + r.id + ' for ' + r.faculty.name}"
+                                    onclick="openDeleteModal(this)">
+                                Delete
+                            </button>
                         </td>
                     </tr>
                     </tbody>
@@ -106,14 +166,14 @@
                 <h3>Audit Log</h3>
                 <div style="max-height:300px;overflow:auto">
                     <table>
-                        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>
+                        <thead><tr><th>When (ISO 8601)</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>
                         <tbody>
                         <tr th:each="a: ${auditLogs}">
-                            <td th:text="${a.createdAt != null ? a.createdAt.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd HH:mm')) : '-'}"></td>
-                             <td th:text="${a.actorUserId}"></td>
-                             <td th:text="${a.action}"></td>
-                             <td th:text="${a.details}"></td>
-                         </tr>
+                            <td th:text="${a.createdAt != null ? a.createdAt.toString() : '-'}"></td>
+                            <td th:text="${a.actorUserId}"></td>
+                            <td th:text="${a.action}"></td>
+                            <td th:text="${a.details}"></td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -122,6 +182,76 @@
         </div>
     </div>
 </div>
+
+<div class="modal-backdrop" id="deleteModalBackdrop">
+    <div class="modal">
+        <h4 style="margin:0 0 8px">Confirm Review Deletion</h4>
+        <p id="deleteModalText" style="margin:0 0 12px;color:#334155">Are you sure you want to remove this review?</p>
+        <form id="deleteReviewForm" method="post">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" type="button" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" type="submit">Delete Review</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    const labels = /*[[${growthLabels}]]*/ [];
+    const values = /*[[${growthValues}]]*/ [];
+
+    const ctx = document.getElementById('usersGrowthChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Registered Users',
+                    data: values,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.15)',
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    function openDeleteModal(button) {
+        const reviewId = button.getAttribute('data-review-id');
+        const label = button.getAttribute('data-review-label') || ('Review #' + reviewId);
+        document.getElementById('deleteModalText').textContent = 'Are you sure you want to remove ' + label + '?';
+        document.getElementById('deleteReviewForm').action = '/admin/reviews/' + reviewId + '/delete';
+        document.getElementById('deleteModalBackdrop').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModalBackdrop').style.display = 'none';
+    }
+
+    const toast = document.getElementById('toastDeleted');
+    if (toast) {
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 220ms ease';
+            setTimeout(() => toast.remove(), 240);
+        }, 2000);
+    }
+</script>
 </body>
 </html>
 

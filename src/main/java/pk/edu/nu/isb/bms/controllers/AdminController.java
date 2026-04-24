@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import pk.edu.nu.isb.bms.models.*;
 import pk.edu.nu.isb.bms.services.AdminService;
 
-import java.util.List;
-
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
@@ -32,12 +30,20 @@ public class AdminController {
     }
 
     @GetMapping("")
-    public String dashboard(Model model) {
+    public String dashboard(@RequestParam(value = "interval", required = false, defaultValue = "30d") String interval,
+                            Model model) {
+        var growth = adminService.getUserGrowthData(interval);
+
         model.addAttribute("users", adminService.listUsers());
         model.addAttribute("reportedReviews", adminService.listReportedReviews());
+        model.addAttribute("reviewRows", adminService.listAllReviewRows());
         model.addAttribute("faculties", adminService.listFaculties());
         model.addAttribute("departments", adminService.listDepartments());
         model.addAttribute("auditLogs", adminService.listAuditLogs());
+
+        model.addAttribute("growthInterval", interval);
+        model.addAttribute("growthLabels", growth.labels());
+        model.addAttribute("growthValues", growth.values());
         return "admin";
     }
 
@@ -62,7 +68,7 @@ public class AdminController {
     @PostMapping("/reviews/{id}/delete")
     public String deleteReview(@PathVariable Long id, Authentication authentication) {
         adminService.deleteReview(id, actorId(authentication));
-        return "redirect:/admin";
+        return "redirect:/admin?reviewDeleted=1";
     }
 
     @PostMapping("/faculties/add")

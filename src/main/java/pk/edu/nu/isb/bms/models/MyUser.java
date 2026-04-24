@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
 import lombok.Getter;
 
 @Getter
@@ -36,11 +37,15 @@ public class MyUser {
     @Column(nullable = false, length = 20)
     private String role;
 
+    @Column(name = "created_at", nullable = false)
+    private OffsetDateTime createdAt;
+
     @PrePersist
     void initDefaults() {
         this.enabled = true;
         this.accountLocked = false;
         if (this.role == null) this.role = "STUDENT";
+        if (this.createdAt == null) this.createdAt = OffsetDateTime.now();
     }
 
     public Long getId() {
@@ -83,5 +88,8 @@ public class MyUser {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
 }

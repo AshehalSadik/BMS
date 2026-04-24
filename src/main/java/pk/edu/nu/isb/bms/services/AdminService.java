@@ -4,7 +4,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pk.edu.nu.isb.bms.models.*;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -90,14 +98,29 @@ public class AdminService {
         return reviewRepository.findAll().stream().filter(Review::isReported).toList();
     }
 
+    public List<ReviewRow> listAllReviewRows() {
+        return reviewRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(r -> new ReviewRow(
+                        r.getId(),
+                        "Anonymous",
+                        r.getFaculty() != null ? r.getFaculty().getName() : "Unknown",
+                        r.getCourse() != null ? (r.getCourse().getCode() + " - " + r.getCourse().getTitle()) : "N/A",
+                        r.getCreatedAt(),
+                        r.getRating()
+                ))
+                .toList();
+    }
+
     @Transactional
     public void deleteReview(Long reviewId, Long adminUserId) {
-        reviewRepository.deleteById(reviewId);
-        var log = new AuditLog();
-        log.setActorUserId(adminUserId);
-        log.setAction("DELETE_REVIEW");
-        log.setDetails("Deleted review " + reviewId);
-        auditLogRepository.save(log);
+        Review review = reviewRepository.findById(reviewId).orElseThrow();
+        String facultyName = review.getFaculty() != null ? review.getFaculty().getName() : "Unknown";
+        String courseLabel = review.getCourse() != null ? review.getCourse().getCode() + "-" + review.getCourse().getTitle() : "N/A";
+        String details = "Admin " + adminUserId + " deleted review " + reviewId +
+                " (faculty=" + facultyName + ", course=" + courseLabel + ", rating=" + review.getRating() + ")";
+
+        reviewRepository.delete(review);
+        logAction(adminUserId, "DELETE_REVIEW", details);
     }
 
     public List<FacultyEntity> listFaculties() { return facultyRepository.findAll(); }
@@ -130,7 +153,50 @@ public class AdminService {
         return saved;
     }
 
-    public List<AuditLog> listAuditLogs() { return auditLogRepository.findAll(); }
+    public List<AuditLog> listAuditLogs() {
+        return auditLogRepository.findAll().stream()
+                .sorted(Comparator.comparing(AuditLog::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public UserGrowthData getUserGrowthData(String interval) {
+        String resolved = interval == null ? "30d" : interval;
+        int days = switch (resolved) {
+            case "7d" -> 7;
+            case "year" -> 365;
+            default -> 30;
+        };
+
+        OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC).minusDays(days - 1L);
+        List<MyUser> users = userRepository.findByCreatedAtGreaterThanEqualOrderByCreatedAtAsc(from);
+
+        Map<LocalDate, Integer> perDay = new LinkedHashMap<>();
+        LocalDate startDay = from.toLocalDate();
+        LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+        for (LocalDate d = startDay; !d.isAfter(today); d = d.plusDays(1)) {
+            perDay.put(d, 0);
+        }
+        for (MyUser u : users) {
+            if (u.getCreatedAt() == null) continue;
+            LocalDate day = u.getCreatedAt().toLocalDate();
+            perDay.computeIfPresent(day, (k, v) -> v + 1);
+        }
+
+        DateTimeFormatter fmt = days > 31
+                ? DateTimeFormatter.ofPattern("MMM yy")
+                : DateTimeFormatter.ofPattern("dd MMM");
+
+        List<String> labels = new ArrayList<>();
+        List<Integer> cumulative = new ArrayList<>();
+        int running = 0;
+        for (Map.Entry<LocalDate, Integer> e : perDay.entrySet()) {
+            running += e.getValue();
+            labels.add(e.getKey().format(fmt));
+            cumulative.add(running);
+        }
+
+        return new UserGrowthData(labels, cumulative);
+    }
 
     private void logAction(Long actorUserId, String action, String details) {
         var log = new AuditLog();
@@ -139,4 +205,8 @@ public class AdminService {
         log.setDetails(details);
         auditLogRepository.save(log);
     }
+
+    public record ReviewRow(Long id, String reviewer, String teacherName, String course, OffsetDateTime submittedAt, int averageRating) {}
+
+    public record UserGrowthData(List<String> labels, List<Integer> values) {}
 }
