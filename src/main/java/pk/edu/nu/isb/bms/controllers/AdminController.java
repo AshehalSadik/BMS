@@ -37,6 +37,7 @@ public class AdminController {
         model.addAttribute("users", adminService.listUsers());
         model.addAttribute("reportedReviews", adminService.listReportedReviews());
         model.addAttribute("reviewRows", adminService.listAllReviewRows());
+        model.addAttribute("courseRequests", adminService.listCourseRequests());
         model.addAttribute("faculties", adminService.listFaculties());
         model.addAttribute("departments", adminService.listDepartments());
         model.addAttribute("auditLogs", adminService.listAuditLogs());
@@ -69,6 +70,20 @@ public class AdminController {
     public String deleteReview(@PathVariable Long id, Authentication authentication) {
         adminService.deleteReview(id, actorId(authentication));
         return "redirect:/admin?reviewDeleted=1";
+    }
+
+    @PostMapping("/course-requests/{id}/approve")
+    public String approveCourseRequest(@PathVariable Long id, Authentication authentication) {
+        adminService.approveCourseRequest(id, actorId(authentication));
+        return "redirect:/admin?courseRequestHandled=1";
+    }
+
+    @PostMapping("/course-requests/{id}/reject")
+    public String rejectCourseRequest(@PathVariable Long id,
+                                      @RequestParam String reason,
+                                      Authentication authentication) {
+        adminService.rejectCourseRequest(id, reason, actorId(authentication));
+        return "redirect:/admin?courseRequestHandled=1";
     }
 
     @PostMapping("/faculties/add")

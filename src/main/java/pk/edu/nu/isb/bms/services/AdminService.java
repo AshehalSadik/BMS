@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -21,17 +22,23 @@ public class AdminService {
     private final UserRepository userRepository;
     private final FacultyRepository facultyRepository;
     private final ReviewRepository reviewRepository;
+    private final CourseRepository courseRepository;
+    private final CourseRequestRepository courseRequestRepository;
     private final DepartmentRepository departmentRepository;
     private final AuditLogRepository auditLogRepository;
 
     public AdminService(UserRepository userRepository,
                         FacultyRepository facultyRepository,
                         ReviewRepository reviewRepository,
+                        CourseRepository courseRepository,
+                        CourseRequestRepository courseRequestRepository,
                         DepartmentRepository departmentRepository,
                         AuditLogRepository auditLogRepository) {
         this.userRepository = userRepository;
         this.facultyRepository = facultyRepository;
         this.reviewRepository = reviewRepository;
+        this.courseRepository = courseRepository;
+        this.courseRequestRepository = courseRequestRepository;
         this.departmentRepository = departmentRepository;
         this.auditLogRepository = auditLogRepository;
     }
@@ -98,6 +105,10 @@ public class AdminService {
         return reviewRepository.findAll().stream().filter(Review::isReported).toList();
     }
 
+    public List<CourseRequest> listCourseRequests() {
+        return courseRequestRepository.findAllByOrderByCreatedAtDesc();
+    }
+
     public List<ReviewRow> listAllReviewRows() {
         return reviewRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(r -> new ReviewRow(
@@ -124,6 +135,50 @@ public class AdminService {
     }
 
     public List<FacultyEntity> listFaculties() { return facultyRepository.findAll(); }
+
+    @Transactional
+    public void approveCourseRequest(Long requestId, Long adminUserId) {
+        var actor = userRepository.findById(adminUserId).orElseThrow();
+        CourseRequest request = courseRequestRepository.findByIdAndStatus(requestId, "PENDING").orElseThrow();
+
+        String title = request.getRequestedCourseTitle().trim();
+        String code = resolveCourseCode(request);
+
+        Course course = courseRepository.findByCodeIgnoreCase(code).orElseGet(() -> {
+            Course created = new Course();
+            created.setCode(code);
+            created.setTitle(title);
+            return courseRepository.save(created);
+        });
+
+        courseRepository.linkCourseToFaculty(request.getFaculty().getId(), course.getId());
+
+        request.setStatus("APPROVED");
+        request.setProcessedByUserId(actor.getId());
+        request.setProcessedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        request.setRejectionReason(null);
+        courseRequestRepository.save(request);
+
+        logAction(adminUserId, "APPROVE_COURSE_REQUEST", "Approved course request " + requestId + " -> " + code + " for faculty " + request.getFaculty().getId());
+    }
+
+    @Transactional
+    public void rejectCourseRequest(Long requestId, String reason, Long adminUserId) {
+        var actor = userRepository.findById(adminUserId).orElseThrow();
+        CourseRequest request = courseRequestRepository.findByIdAndStatus(requestId, "PENDING").orElseThrow();
+        String cleanedReason = reason == null ? "" : reason.trim();
+        if (cleanedReason.isEmpty()) {
+            throw new IllegalArgumentException("A rejection reason is required.");
+        }
+
+        request.setStatus("REJECTED");
+        request.setProcessedByUserId(actor.getId());
+        request.setProcessedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        request.setRejectionReason(cleanedReason);
+        courseRequestRepository.save(request);
+
+        logAction(adminUserId, "REJECT_COURSE_REQUEST", "Rejected course request " + requestId + " (reason: " + cleanedReason + ")");
+    }
 
     @Transactional
     public FacultyEntity addFaculty(FacultyEntity f, Long adminUserId) {
@@ -209,4 +264,23 @@ public class AdminService {
     public record ReviewRow(Long id, String reviewer, String teacherName, String course, OffsetDateTime submittedAt, int averageRating) {}
 
     public record UserGrowthData(List<String> labels, List<Integer> values) {}
+
+    private String resolveCourseCode(CourseRequest request) {
+        String requestedCode = request.getRequestedCourseCode() == null ? "" : request.getRequestedCourseCode().trim();
+        if (!requestedCode.isEmpty()) {
+            return requestedCode.length() > 50 ? requestedCode.substring(0, 50) : requestedCode;
+        }
+
+        String title = request.getRequestedCourseTitle() == null ? "COURSE" : request.getRequestedCourseTitle().trim();
+        String slug = title.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "-").replaceAll("^-+|-+$", "");
+        if (slug.isBlank()) {
+            slug = "COURSE";
+        }
+
+        String code = "REQ-" + slug;
+        if (request.getId() != null) {
+            code = code + "-" + request.getId();
+        }
+        return code.length() > 50 ? code.substring(0, 50) : code;
+    }
 }

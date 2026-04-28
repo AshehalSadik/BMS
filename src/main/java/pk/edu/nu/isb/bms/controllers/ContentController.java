@@ -1,6 +1,5 @@
 package pk.edu.nu.isb.bms.controllers;
 
-import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,18 +20,21 @@ public class ContentController {
     private final FacultyService facultyService;
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
-    private final EntityManager entityManager;
+    private final CourseRepository courseRepository;
+    private final CourseRequestRepository courseRequestRepository;
 
     public ContentController(MyUserService userService,
                              FacultyService facultyService,
                              ReviewRepository reviewRepository,
                              UserRepository userRepository,
-                             EntityManager entityManager) {
+                             CourseRepository courseRepository,
+                             CourseRequestRepository courseRequestRepository) {
         this.userService = userService;
         this.facultyService = facultyService;
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
-        this.entityManager = entityManager;
+        this.courseRepository = courseRepository;
+        this.courseRequestRepository = courseRequestRepository;
     }
 
     @GetMapping("/")
@@ -88,6 +90,9 @@ public class ContentController {
     public String facultyDetail(@PathVariable Long id,
                                 @RequestParam(value = "reviewSubmitted", required = false) String reviewSubmitted,
                                 @RequestParam(value = "reviewReported", required = false) String reviewReported,
+                                @RequestParam(value = "reviewCourseError", required = false) String reviewCourseError,
+                                @RequestParam(value = "courseRequestSubmitted", required = false) String courseRequestSubmitted,
+                                @RequestParam(value = "courseRequestError", required = false) String courseRequestError,
                                 Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean authenticated = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
@@ -108,6 +113,9 @@ public class ContentController {
         model.addAttribute("courses", findCoursesForFaculty(id));
         model.addAttribute("reviewSubmitted", reviewSubmitted != null);
         model.addAttribute("reviewReported", reviewReported != null);
+        model.addAttribute("reviewCourseError", reviewCourseError != null);
+        model.addAttribute("courseRequestSubmitted", courseRequestSubmitted != null);
+        model.addAttribute("courseRequestError", courseRequestError != null);
 
         model.addAttribute("criteriaLabels", List.of(
                 "Subject Matter Knowledge",
@@ -151,6 +159,10 @@ public class ContentController {
                         @RequestParam(required = false) Integer classroomEnvironment,
                         @RequestParam(required = false) Integer professionalEthics,
                         @RequestParam(required = false) Integer communicationSkills) {
+        if (!isCourseSelectableForFaculty(courseId, id)) {
+            return "redirect:/faculty/" + id + "?reviewCourseError=1";
+        }
+
         int baseRating = normalizeRating(rating == null ? 5 : rating);
 
         short smk = (short) normalizeRating(subjectMatterKnowledge == null ? baseRating : subjectMatterKnowledge);
@@ -167,8 +179,8 @@ public class ContentController {
         facultyRef.setId(id);
         r.setFaculty(facultyRef);
 
-        if (courseId != null && isCourseAssignedToFaculty(courseId, id)) {
-            r.setCourse(entityManager.getReference(Course.class, courseId));
+        if (courseId != null) {
+            courseRepository.findById(courseId).ifPresent(r::setCourse);
         }
 
         r.setSubjectMatterKnowledge(smk);
@@ -190,27 +202,56 @@ public class ContentController {
         return "redirect:/faculty/" + id + "?reviewSubmitted=1";
     }
 
+    @PostMapping("/faculty/{id}/course-requests")
+    public String requestCourseAddition(@PathVariable Long id,
+                                        @RequestParam String requestedCourseTitle,
+                                        @RequestParam(required = false) String requestedCourseCode) {
+        String title = requestedCourseTitle == null ? "" : requestedCourseTitle.trim();
+        String code = requestedCourseCode == null ? "" : requestedCourseCode.trim();
+
+        if (title.isEmpty()) {
+            return "redirect:/faculty/" + id + "?courseRequestError=1";
+        }
+
+        if (courseRequestRepository.existsByFaculty_IdAndRequestedCourseTitleIgnoreCaseAndStatus(id, title, "PENDING")) {
+            return "redirect:/faculty/" + id + "?courseRequestError=1";
+        }
+
+        CourseRequest request = new CourseRequest();
+        FacultyEntity facultyRef = new FacultyEntity();
+        facultyRef.setId(id);
+        request.setFaculty(facultyRef);
+        request.setRequestedCourseTitle(title);
+        request.setRequestedCourseCode(code.isEmpty() ? null : code);
+        request.setStatus("PENDING");
+        courseRequestRepository.save(request);
+        return "redirect:/faculty/" + id + "?courseRequestSubmitted=1";
+    }
+
     private int normalizeRating(int rating) {
         if (rating < 1) return 1;
         return Math.min(rating, 5);
     }
 
-    @SuppressWarnings("unchecked")
     private List<Course> findCoursesForFaculty(Long facultyId) {
-        return entityManager.createNativeQuery(
-                        "SELECT c.* FROM courses c INNER JOIN faculty_courses fc ON fc.course_id = c.id WHERE fc.faculty_id = :facultyId ORDER BY c.code",
-                        Course.class)
-                .setParameter("facultyId", facultyId)
-                .getResultList();
+        List<Course> assignedCourses = courseRepository.findByFacultyId(facultyId);
+        if (!assignedCourses.isEmpty()) {
+            return assignedCourses;
+        }
+        return courseRepository.findAllByOrderByCodeAsc();
     }
 
-    private boolean isCourseAssignedToFaculty(Long courseId, Long facultyId) {
-        Object value = entityManager.createNativeQuery(
-                        "SELECT EXISTS (SELECT 1 FROM faculty_courses WHERE faculty_id = :facultyId AND course_id = :courseId)")
-                .setParameter("facultyId", facultyId)
-                .setParameter("courseId", courseId)
-                .getSingleResult();
-        return value instanceof Boolean b ? b : "t".equalsIgnoreCase(String.valueOf(value));
+    private boolean isCourseSelectableForFaculty(Long courseId, Long facultyId) {
+        if (courseId == null) {
+            return false;
+        }
+
+        if (courseRepository.existsFacultyCourse(facultyId, courseId)) {
+            return true;
+        }
+
+        // Allow global catalog selection only when no faculty-specific mappings exist yet.
+        return !courseRepository.existsAnyFacultyCourse(facultyId) && courseRepository.existsById(courseId);
     }
 
     @GetMapping("/login")
