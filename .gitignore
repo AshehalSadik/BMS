@@ -30,4 +30,13 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
-.vscode/
+
+# Local environment overrides
+.env
+
+# txt files for debugging
+*.txt
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
+branch_structure.json
